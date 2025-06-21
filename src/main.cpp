@@ -8,7 +8,7 @@
 #include "Debuger.h"
 
 // マシンのセットアップ値
-#define SPEED 200  // モーターの速度
+#define SPEED 100  // モーターの速度
 #define ENABLE_LINE_SENSOR true  // ラインセンサーの有効化
 #define ENABLE_GYRO_SENSOR true  // ジャイロセンサーの有効化
 #define ENABLE_DEBUGER false  // デバッグモードの有効化
@@ -17,8 +17,8 @@
 #define WRAP_AROUND_ANGLE_THRESHOLD 10  // 回り込み角度の閾値
 #define WRAP_AROUND_BALL_DIST_THRESHOLD 850  // 回り込み距離の閾値
 #define WRAP_AROUND_ANGLE_RATIO 1.8  // 回り込み角度の倍率
-#define BALL_DIST_MIN 600  // ボールの最小距離
-#define BALL_DIST_MAX 1200  // ボールの最大距離
+#define BALL_DIST_MIN 800.0  // ボールの最小距離
+#define BALL_DIST_MAX 1100.0  // ボールの最大距離
 
 // ラインセンサーの閾値
 const int LINE_SENSOR_THRESHOLDS[] = {880, 850, 920, 870, 850, 850, 820, 900};
@@ -62,7 +62,6 @@ void loop() {
   debuger.printValues(gyroAngle, lineAngle, lineVectorMagnitude, ballAngle, ballDist);
 
   int moveAngle = calcWrapAroundAngle(ballAngle, ballDist);
-  Serial.println(moveAngle);
   motorController.moveDirection(moveAngle, SPEED, gyroAngle, lineAngle, lineVectorMagnitude);
 }
 
@@ -89,7 +88,16 @@ int calcWrapAroundAngle(int ballAngle, int ballDist) {
   // }
   if ((correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) && ballDist > BALL_DIST_MIN) {
     float ratio = 1 + (ballDist - BALL_DIST_MIN) / (BALL_DIST_MAX - BALL_DIST_MIN);
+    if (abs(correctBallAngle) < 75) {
+      ratio = ratio * 1.5;
+    }
     moveAngle = correctBallAngle * ratio;
+    Serial.print("ballDist: ");
+    Serial.print(ballDist);
+    Serial.print(" ratio: ");
+    Serial.print(ratio);
+    Serial.print(" moveAngle: ");
+    Serial.println(moveAngle);
   }
   // ボールの角度を元の座標系に変換
   if (moveAngle < 0) {
