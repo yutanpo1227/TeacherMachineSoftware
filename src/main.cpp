@@ -8,15 +8,17 @@
 #include "Debuger.h"
 
 // マシンのセットアップ値
-#define SPEED 100  // モーターの速度
+#define SPEED 200  // モーターの速度
 #define ENABLE_LINE_SENSOR true  // ラインセンサーの有効化
 #define ENABLE_GYRO_SENSOR true  // ジャイロセンサーの有効化
-#define ENABLE_DEBUGER true  // デバッグモードの有効化
+#define ENABLE_DEBUGER false  // デバッグモードの有効化
 
 // 回り込みの設定値
 #define WRAP_AROUND_ANGLE_THRESHOLD 10  // 回り込み角度の閾値
 #define WRAP_AROUND_BALL_DIST_THRESHOLD 850  // 回り込み距離の閾値
 #define WRAP_AROUND_ANGLE_RATIO 1.8  // 回り込み角度の倍率
+#define BALL_DIST_MIN 600  // ボールの最小距離
+#define BALL_DIST_MAX 1200  // ボールの最大距離
 
 // ラインセンサーの閾値
 const int LINE_SENSOR_THRESHOLDS[] = {880, 850, 920, 870, 850, 850, 820, 900};
@@ -75,10 +77,19 @@ int calcWrapAroundAngle(int ballAngle, int ballDist) {
 
   int moveAngle = correctBallAngle;
   // ボールが近い時は大きく回り込む
-  if (ballDist > WRAP_AROUND_BALL_DIST_THRESHOLD) {
-    if (correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) {
-      moveAngle = correctBallAngle * WRAP_AROUND_ANGLE_RATIO;
-    }
+  // if (ballDist > WRAP_AROUND_BALL_DIST_THRESHOLD) {
+  //   if (correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) {
+  //     if (abs(correctBallAngle) < 90) {
+  //       moveAngle = correctBallAngle * WRAP_AROUND_ANGLE_RATIO;
+  //     }
+  //     else {
+  //       moveAngle = correctBallAngle * WRAP_AROUND_ANGLE_RATIO / 1.5;
+  //     }
+  //   }
+  // }
+  if ((correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) && ballDist > BALL_DIST_MIN) {
+    float ratio = 1 + (ballDist - BALL_DIST_MIN) / (BALL_DIST_MAX - BALL_DIST_MIN);
+    moveAngle = correctBallAngle * ratio;
   }
   // ボールの角度を元の座標系に変換
   if (moveAngle < 0) {
