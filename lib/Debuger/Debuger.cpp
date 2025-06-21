@@ -1,15 +1,15 @@
-#include "Debuger.h"
+#include "Debugger.h"
 
-Debuger::Debuger(bool isEnabled) {
-    this->isEnabled = isEnabled;
+Debugger::Debugger(bool isEnabled) {
+    enabled = isEnabled;
 }
 
-void Debuger::begin(int baudRate) {
-    Serial.begin(baudRate);
+void Debugger::begin(int baudRate) {
+    if (enabled) Serial.begin(baudRate);
 }
 
-void Debuger::printSensorStatus(bool lineSensor, bool gyroSensor) {
-    if (!isEnabled) {
+void Debugger::printSensorStatus(bool lineSensor, bool gyroSensor) {
+    if (!enabled) {
         return;
     }
     Serial.print("lineSensor: ");
@@ -18,15 +18,15 @@ void Debuger::printSensorStatus(bool lineSensor, bool gyroSensor) {
     Serial.println(gyroSensor);
 }
 
-void Debuger::println(String message) {
-    if (!isEnabled) {
-        return;
-    }
+void Debugger::println(String message) {
+    if (!enabled) return;
+    
+    Serial.print("[DEBUG] ");
     Serial.println(message);
 }
 
-void Debuger::printValues(int gyroAngle, int lineAngle, float lineVectorMagnitude, int ballAngle, int ballDist) {
-    if (!isEnabled) {
+void Debugger::printValues(int gyroAngle, int lineAngle, float lineVectorMagnitude, int ballAngle, int ballDist) {
+    if (!enabled) {
         return;
     }
     Serial.print("gyroAngle: ");

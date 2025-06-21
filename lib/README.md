@@ -1,119 +1,90 @@
-# プロジェクトライブラリ README
+# Teacher Machine ライブラリ
 
-このディレクトリには、プロジェクト専用のライブラリが含まれています。
-PlatformIOはこれらを静的ライブラリとしてコンパイルし、実行ファイルにリンクします。
+このディレクトリには、Teacher Machineプロジェクトで使用するカスタムライブラリが含まれています。
 
-## 自作ライブラリ一覧
+## ライブラリ構成
 
-### 1. GyroSensor
-**説明**: Adafruit BNO055ジャイロセンサーを使用した姿勢検出ライブラリ
-**機能**:
-- Yaw角の読み取り
-- I2C通信によるBNO055制御
-- センサーのモード設定
-**使用例**: ロボットの姿勢制御、方向補正
+### 1. LineSensor
+ラインセンサーの制御を行うライブラリです。16個のセンサーから線の位置と方向を検出します。
 
-### 2. IRSensor  
-**説明**: IRセンサーアレイを使用したボール検出ライブラリ
-**機能**:
-- 複数IRセンサーからの角度計算
-- 距離測定
-- RCローパスフィルタによるノイズ除去
-- 最大値センサー周辺のみを使用した精密検出
-**使用例**: サッカーロボットのボール追跡
+### 2. GyroSensor
+ジャイロセンサー(MPU6050)の制御を行うライブラリです。ロボットの傾きや回転を検出します。
 
-### 3. MotorController
-**説明**: 4輪オムニホイールロボット用モーター制御ライブラリ
-**機能**:
-- 全方向移動制御
-- 旋回動作
-- ジャイロセンサー連携による姿勢修正
-- 三角関数を使用した方向制御
-**使用例**: オムニホイールロボットの移動制御
+### 3. BallSensor
+ボールセンサーの制御を行うライブラリです。40個のセンサーからボールの位置を検出します。
 
 ### 4. Motor
-**説明**: 単一DCモーターの制御ライブラリ
-**機能**:
-- PWM制御による速度調整
-- 正転・逆転制御
-**使用例**: MotorControllerから使用される基本モーター制御
+モータードライバの制御を行うライブラリです。4つのモーターを独立して制御できます。
 
-### 5. LineSensor
-**説明**: ライン検出用ライブラリ
-**機能**:
-- 複数センサーからのライン角度検出
-- ライン上判定
-- しきい値による白/黒判定
-**使用例**: ライン回避
+### 5. MotorControl
+モーターの協調制御を行うライブラリです。全方向移動の計算を行います。
 
-### 6. Debuger
-**説明**: シリアル通信を使用したデバッグ出力ライブラリ
-**機能**:
-- 可変長引数対応のprint関数
-- センサー状態表示
-- 値の組み合わせ表示
-**使用例**: 開発時のデバッグ、センサー値監視
+### 6. Debugger
+デバッグ用のライブラリです。シリアル通信を使ってセンサーの値やシステムの状態を出力します。
 
-## ライブラリ構造
+## 使用方法
 
-```
-|--lib
-|  |--GyroSensor
-|  |  |- GyroSensor.h
-|  |  |- GyroSensor.cpp
-|  |--IRSensor
-|  |  |- IRSensor.h
-|  |  |- IRSensor.cpp
-|  |--MotorController
-|  |  |- MotorController.h
-|  |  |- MotorController.cpp
-|  |--Motor
-|  |  |- Motor.h
-|  |  |- Motor.cpp
-|  |--LineSensor
-|  |  |- LineSensor.h
-|  |  |- LineSensor.cpp
-|  |--Debuger
-|  |  |- Debuger.h
-|  |  |- Debuger.cpp
-|  |- README --> このファイル
-```
-
-## 使用例
+各ライブラリは `src/main.cpp` でインクルードして使用します。
 
 ```cpp
+#include "LineSensor.h"
 #include "GyroSensor.h"
-#include "IRSensor.h" 
-#include "MotorController.h"
-#include "Debuger.h"
+#include "BallSensor.h"
+#include "Motor.h"
+#include "MotorControl.h"
+#include "Debugger.h"
+```
 
-GyroSensor gyro;
-IRSensor irSensor(22, 8);
-MotorController motorController(&motor1, &motor2, &motor3, &motor4);
-Debuger debug;
+## ディレクトリ構造
+
+```
+lib/
+|--LineSensor/
+|  |--LineSensor.h
+|  |--LineSensor.cpp
+|--GyroSensor/
+|  |--GyroSensor.h
+|  |--GyroSensor.cpp
+|--BallSensor/
+|  |--BallSensor.h
+|  |--BallSensor.cpp
+|--Motor/
+|  |--Motor.h
+|  |--Motor.cpp
+|--MotorControl/
+|  |--MotorControl.h
+|  |--MotorControl.cpp
+|--Debugger
+|  |  |- Debugger.h
+|  |  |- Debugger.cpp
+|--README.md
+```
+
+## 初期化例
+
+```cpp
+#include "libraries.h"
+#include "Motor.h"
+#include "LineSensor.h"
+#include "GyroSensor.h"
+#include "BallSensor.h"
+#include "MotorControl.h"
+#include "Debugger.h"
+
+LineSensor lineSensor;
+GyroSensor gyroSensor;
+BallSensor ballSensor;
+Motor motor;
+MotorControl motorControl;
+Debugger debug;
 
 void setup() {
-    debug.begin(9600);
-    gyro.setup();
-    gyro.setMode(true);
-}
-
-void loop() {
-    int gyroAngle = gyro.readYawAngle();
-    int ballAngle = irSensor.readAngle();
-    int ballDist = irSensor.readDistance();
-    
-    debug.printValues(gyroAngle, 0, ballAngle, ballDist);
-    motorController.moveDirection(ballAngle, 127, gyroAngle);
+  lineSensor.begin();
+  gyroSensor.begin();
+  ballSensor.begin();
+  motor.begin();
+  debug.begin(9600);
 }
 ```
 
----
-
-## PlatformIO Library Dependency Finder
-
-PlatformIOライブラリ依存関係ファインダーは、プロジェクトのソースファイルをスキャンして、
-依存ライブラリを自動的に見つけます。
-
-詳細情報:
-- https://docs.platformio.org/page/librarymanager/ldf.html
+各ライブラリの詳細な使用方法については、各ヘッダーファイルのコメントを参照してください。
