@@ -60,7 +60,7 @@ void loop() {
   debugger.printValues(gyroAngle, lineAngle, lineVectorMagnitude, ballAngle, ballDist);
 
   int moveAngle = calcWrapAroundAngle(ballAngle, ballDist);
-  Serial.println(moveAngle);
+  // Serial.println(moveAngle);
   motorController.moveDirection(moveAngle, SPEED, gyroAngle, lineAngle, lineVectorMagnitude);
 }
 
