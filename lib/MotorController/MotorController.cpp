@@ -57,7 +57,7 @@ void MotorController::moveDirection(int direction, int speed, int gyroAngle, int
         correctionPowerRatio = -pow((gyroAngle - 360) / 90.0, 2);
     }
 
-    int correctionPower = MAX_CORRECTION_POWER * correctionPowerRatio;
+    int correctionPower = MAX_CORRECTION_POWER * correctionPowerRatio + 10;
 
     // モーターの速度パラメータを計算
     float m1SpeedParam = sin((direction-45) * PI / 180);
