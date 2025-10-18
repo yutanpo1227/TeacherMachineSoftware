@@ -16,7 +16,7 @@
 // 回り込みの設定値
 #define WRAP_AROUND_ANGLE_THRESHOLD 10  // 回り込み角度の閾値
 #define WRAP_AROUND_BALL_DIST_THRESHOLD 850  // 回り込み距離の閾値
-#define WRAP_AROUND_ANGLE_RATIO 1.8  // 回り込み角度の倍率
+#define WRAP_AROUND_ANGLE_RATIO 1.5  // 回り込み角度の倍率
 
 // ラインセンサーの閾値
 const int LINE_SENSOR_THRESHOLDS[] = {880, 850, 920, 870, 850, 850, 820, 900};
@@ -60,7 +60,6 @@ void loop() {
   debugger.printValues(gyroAngle, lineAngle, lineVectorMagnitude, ballAngle, ballDist);
 
   int moveAngle = calcWrapAroundAngle(ballAngle, ballDist);
-  // Serial.println(moveAngle);
   motorController.moveDirection(moveAngle, SPEED, gyroAngle, lineAngle, lineVectorMagnitude);
 }
 
@@ -85,5 +84,11 @@ int calcWrapAroundAngle(int ballAngle, int ballDist) {
     moveAngle = moveAngle + 360;
   }
   moveAngle = moveAngle + 90;
+  if (moveAngle > 360) {
+    moveAngle = moveAngle - 360;
+  }
+  if (moveAngle < 0) {
+    moveAngle = moveAngle + 360;
+  }
   return moveAngle;
 }
