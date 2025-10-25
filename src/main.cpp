@@ -8,7 +8,7 @@
 #include "Debugger.h"
 
 // マシンのセットアップ値
-#define SPEED 100  // モーターの速度
+#define SPEED 200  // モーターの速度
 #define ENABLE_LINE_SENSOR true  // ラインセンサーの有効化
 #define ENABLE_GYRO_SENSOR true  // ジャイロセンサーの有効化
 #define ENABLE_DEBUGGER true  // デバッグモードの有効化
