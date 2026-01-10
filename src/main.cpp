@@ -14,10 +14,11 @@
 #define ENABLE_DEBUGGER false  // デバッグモードの有効化
 
 // 回り込みの設定値
-#define WRAP_AROUND_ANGLE_THRESHOLD 5  // 回り込み角度の閾値
-#define WRAP_AROUND_BALL_DIST_THRESHOLD 900  // 回り込み距離の閾値
-#define WRAP_AROUND_ANGLE_RATIO 1.5  // 回り込み角度の倍率
-#define WRAP_AROUND_ANGLE 70  // 最大回り込み角度
+#define WRAP_AROUND_ANGLE_THRESHOLD 10  // 回り込み角度の閾値
+#define WRAP_AROUND_BALL_DIST_THRESHOLD 850  // 回り込み距離の閾値
+#define WRAP_AROUND_ANGLE_RATIO 1.8  // 回り込み角度の倍率
+#define BALL_DIST_MIN 800.0  // ボールの最小距離
+#define BALL_DIST_MAX 1100.0  // ボールの最大距離
 
 // ラインセンサーの閾値
 const int LINE_SENSOR_THRESHOLDS[] = {860, 810, 890, 820, 800, 820, 820, 820};
@@ -75,15 +76,28 @@ int calcWrapAroundAngle(int ballAngle, int ballDist) {
 
   int moveAngle = correctBallAngle;
   // ボールが近い時は大きく回り込む
-  if (ballDist > WRAP_AROUND_BALL_DIST_THRESHOLD) {
-    // if (correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) {
-    //   moveAngle = correctBallAngle * WRAP_AROUND_ANGLE_RATIO;
-    // }
-    if (correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD) {
-      moveAngle = correctBallAngle + 90;
-    } else if (correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) {
-      moveAngle = correctBallAngle - 90;
+  // if (ballDist > WRAP_AROUND_BALL_DIST_THRESHOLD) {
+  //   if (correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) {
+  //     if (abs(correctBallAngle) < 90) {
+  //       moveAngle = correctBallAngle * WRAP_AROUND_ANGLE_RATIO;
+  //     }
+  //     else {
+  //       moveAngle = correctBallAngle * WRAP_AROUND_ANGLE_RATIO / 1.5;
+  //     }
+  //   }
+  // }
+  if ((correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) && ballDist > BALL_DIST_MIN) {
+    float ratio = 1 + (ballDist - BALL_DIST_MIN) / (BALL_DIST_MAX - BALL_DIST_MIN);
+    if (abs(correctBallAngle) < 75) {
+      ratio = ratio * 1.5;
     }
+    moveAngle = correctBallAngle * ratio;
+    Serial.print("ballDist: ");
+    Serial.print(ballDist);
+    Serial.print(" ratio: ");
+    Serial.print(ratio);
+    Serial.print(" moveAngle: ");
+    Serial.println(moveAngle);
   }
   // ボールの角度を元の座標系に変換
   if (moveAngle < 0) {
