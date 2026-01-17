@@ -10,7 +10,7 @@ class MotorController {
         void moveDirection(int direction, int speed);
         void moveDirection(int direction, int speed, int gyroAngle);
         void moveDirection(int direction, int speed, int gyroAngle, int lineAngle, float lineVectorMagnitude);
-        void moveDirectionEight(int direction, int speed, int gyroAngle, int lineAngle, float lineVectorMagnitude);
+        void moveDirectionEight(int direction, int speed, int irAngle, int gyroAngle, int lineAngle, float lineVectorMagnitude);
         void turnRight(int speed);
         void turnLeft(int speed);
         void stop();

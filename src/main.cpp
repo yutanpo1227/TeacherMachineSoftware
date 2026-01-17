@@ -8,20 +8,24 @@
 #include "Debugger.h"
 
 // マシンのセットアップ値
-#define SPEED 100  // モーターの速度
+#define SPEED 230  // モーターの速度
 #define ENABLE_LINE_SENSOR true  // ラインセンサーの有効化
 #define ENABLE_GYRO_SENSOR true  // ジャイロセンサーの有効化
 #define ENABLE_DEBUGGER false  // デバッグモードの有効化
 
 // 回り込みの設定値
 #define WRAP_AROUND_ANGLE_THRESHOLD 10  // 回り込み角度の閾値
-#define WRAP_AROUND_BALL_DIST_THRESHOLD 850  // 回り込み距離の閾値
+#define WRAP_AROUND_BALL_DIST_THRESHOLD 900  // 回り込み距離の閾値
 #define WRAP_AROUND_ANGLE_RATIO 1.8  // 回り込み角度の倍率
 #define BALL_DIST_MIN 800.0  // ボールの最小距離
 #define BALL_DIST_MAX 1100.0  // ボールの最大距離
 
 // ラインセンサーの閾値
 const int LINE_SENSOR_THRESHOLDS[] = {860, 810, 890, 820, 800, 820, 820, 820};
+
+// 8方向移動用の角度配列
+const int DIRECTION_EIGHT_ANGLES[] = {0, 30, 90, 135, 180, 225, 270, 315};
+const int WRAP_AROUND_ANGLE[] = {315, 345, 90, 225, 250, 300, 0, 225};
 
 // センサーのインスタンス
 LineSensor lineSensor = LineSensor(0, 8, LINE_SENSOR_THRESHOLDS);
@@ -40,6 +44,7 @@ Motor motor4 = Motor(12, 11);
 // モーターコントローラーのインスタンス
 MotorController motorController = MotorController(&motor1, &motor2, &motor3, &motor4);
 
+int correctAngle(int angle);
 int calcWrapAroundAngle(int ballAngle, int ballDist);
 
 void setup() {
@@ -60,9 +65,34 @@ void loop() {
   const int ballDist = irSensor.readDistance();
   debugger.printValues(gyroAngle, lineAngle, lineVectorMagnitude, ballAngle, ballDist);
 
-  int moveAngle = calcWrapAroundAngle(ballAngle, ballDist);
-  // motorController.moveDirection(moveAngle, SPEED, gyroAngle, lineAngle, lineVectorMagnitude);
-  motorController.moveDirectionEight(moveAngle, SPEED, gyroAngle, lineAngle, lineVectorMagnitude);
+  // int moveAngle = calcWrapAroundAngle(ballAngle, ballDist);
+
+  // 測った角度を8方向に変換して移動
+  int directionEight = correctAngle(ballAngle);
+  int moveAngle = ballDist < WRAP_AROUND_BALL_DIST_THRESHOLD ? DIRECTION_EIGHT_ANGLES[directionEight] : WRAP_AROUND_ANGLE[directionEight];
+  motorController.moveDirection(moveAngle, SPEED, gyroAngle, lineAngle, lineVectorMagnitude);
+}
+
+int correctAngle(int angle) {
+    if(angle > 330 || angle <= 40){
+        return 0;
+    } else if(angle > 40 && angle <= 80){
+        return 1;
+    } else if(angle > 80 && angle <= 110){
+        return 2;
+    } else if(angle > 110 && angle <= 150){
+        return 3;
+    } else if(angle > 150 && angle <= 190){
+        return 4;
+    } else if(angle > 190 && angle <= 230){
+        return 5;
+    } else if(angle > 230 && angle <= 275){
+        return 6;
+    } else if(angle > 275 && angle <= 330){
+        return 7;
+    } else {
+        return -1;
+    }
 }
 
 

@@ -3,7 +3,7 @@
 
 #define MAX_CORRECTION_POWER 50
 
-#define LINE_STOP_ANGLE_THRESHOLD 10
+#define LINE_STOP_ANGLE_THRESHOLD 45
 #define LINE_VECTOR_MAGNITUDE_THRESHOLD 0.75
 
 MotorController::MotorController(Motor* motor1, Motor* motor2, Motor* motor3, Motor* motor4) {
@@ -32,7 +32,7 @@ void MotorController::moveDirection(int direction, int speed, int gyroAngle, int
             // ラインベクトルの大きさが小さい場合はラインの反対方向に移動
             stop();
             direction = lineAngle - 180;
-            delayTime = 100;
+            delayTime = 200;
         } else {
             // ラインベクトルが十分大きい場合はラインベクトル方向を避けるように移動
             stop();
@@ -43,7 +43,7 @@ void MotorController::moveDirection(int direction, int speed, int gyroAngle, int
                 return;
             }
             direction = atan2(component_y, component_x) * 180 / PI;
-            delayTime = 100;
+            delayTime = 200;
         }
     }
     // 姿勢が左右90度以上ずれている場合はその場で旋回
@@ -69,80 +69,6 @@ void MotorController::moveDirection(int direction, int speed, int gyroAngle, int
     // int correctionPower = MAX_CORRECTION_POWER * correctionPowerRatio;
 
 
-    // モーターの速度パラメータを計算
-    float m1SpeedParam = sin((direction-45) * PI / 180);
-    float m2SpeedParam = sin((direction-135) * PI / 180);
-    float m3SpeedParam = sin((direction+135) * PI / 180);
-    float m4SpeedParam = sin((direction+45) * PI / 180);
-
-    float speedParams[4] = {m1SpeedParam, m2SpeedParam, m3SpeedParam, m4SpeedParam};
-    float maxSpeedParam = 0;
-
-    for (int i = 0; i < 4; i++) {
-        if (abs(speedParams[i]) > maxSpeedParam) {
-            maxSpeedParam = abs(speedParams[i]);
-        }
-    }
-
-    // 最大速度パラメータを1にするための倍率
-    float ratio = 1 / maxSpeedParam;
-
-    // 基底速度 * 方向パラメータ * 最大速度パラメータ + 姿勢修正パワー
-    motor1->setSpeed(speed * speedParams[0] * ratio + correctionPower);
-    motor2->setSpeed(speed * speedParams[1] * ratio + correctionPower);
-    motor3->setSpeed(speed * speedParams[2] * ratio + correctionPower);
-    motor4->setSpeed(speed * speedParams[3] * ratio + correctionPower);
-    delay(delayTime);
-}
-
-void MotorController::moveDirectionEight(int direction, int speed, int gyroAngle, int lineAngle, float lineVectorMagnitude) {
-    int delayTime = 0;
-    if (lineAngle != -1) {
-        if (abs(direction - lineAngle) < LINE_STOP_ANGLE_THRESHOLD) {
-            // ライン上にいると判断して停止
-            stop();
-            return;
-        } else if (lineVectorMagnitude < LINE_VECTOR_MAGNITUDE_THRESHOLD) {
-            // ラインベクトルの大きさが小さい場合はラインの反対方向に移動
-            stop();
-            direction = lineAngle - 180;
-            delayTime = 100;
-        } else {
-            // ラインベクトルが十分大きい場合はラインベクトル方向を避けるように移動
-            stop();
-            float component_x = cos(direction * PI / 180) - cos(lineAngle * PI / 180) * 1.5;
-            float component_y = sin(direction * PI / 180) - sin(lineAngle * PI / 180) * 1.5;
-            if (component_x == 0 && component_y == 0) {
-                stop();
-                return;
-            }
-            direction = atan2(component_y, component_x) * 180 / PI;
-            delayTime = 100;
-        }
-    }
-    // 姿勢が左右90度以上ずれている場合はその場で旋回
-    if (gyroAngle > 90 && gyroAngle < 180) {
-        this->turnLeft(gyroAngle);
-        return;
-    } else if (gyroAngle < 270 && gyroAngle >= 180) {
-        this->turnRight(360 - gyroAngle);
-        return;
-    }
-
-    int correctionPower = 0;
-    // 姿勢が左右90度以内ずれている場合は姿勢修正パワーを計算
-    float correctionPowerRatio = 0;
-    if (gyroAngle > 0 && gyroAngle < 90) {
-        correctionPower = 20;
-    } else if (gyroAngle > 270 && gyroAngle < 360) {
-        correctionPower = -20;
-    }
-
-    int directionEight = (direction + 22) / 45;
-    direction = directionEight * 45;
-    if (direction >= 360) {
-        direction -= 360;
-    }
     // モーターの速度パラメータを計算
     float m1SpeedParam = sin((direction-45) * PI / 180);
     float m2SpeedParam = sin((direction-135) * PI / 180);

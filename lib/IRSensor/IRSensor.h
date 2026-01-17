@@ -11,7 +11,7 @@ class IRSensor {
         int numSensors;
         float filteredValues[16];  // フィルタ済み値を保存
         bool firstRead[16];        // 初回読み取りフラグ
-        static constexpr float FILTER_ALPHA = 0.3f;  // フィルタ係数（0-1）
+        static constexpr float FILTER_ALPHA = 0.1f;  // フィルタ係数（0-1）
 };
 
 
