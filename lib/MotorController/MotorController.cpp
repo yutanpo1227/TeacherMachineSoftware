@@ -18,21 +18,21 @@ void MotorController::moveDirection(int direction, int speed) {
 }
 
 void MotorController::moveDirection(int direction, int speed, int gyroAngle) {
-    this->moveDirection(direction, speed, gyroAngle, -1, 0);
+    this->moveDirection(direction, speed, -1, gyroAngle, -1, 0);
 }
 
-void MotorController::moveDirection(int direction, int speed, int gyroAngle, int lineAngle, float lineVectorMagnitude) {
+void MotorController::moveDirection(int direction, int speed, int irAngle, int gyroAngle, int lineAngle, float lineVectorMagnitude) {
     int delayTime = 0;
     if (lineAngle != -1) {
-        if (abs(direction - lineAngle) < LINE_STOP_ANGLE_THRESHOLD) {
-            // ライン上にいると判断して停止
+        if (abs(irAngle - lineAngle) <= LINE_STOP_ANGLE_THRESHOLD) {
+            // ラインの方向とボールの方向が近い場合は停止
             stop();
             return;
         } else if (lineVectorMagnitude < LINE_VECTOR_MAGNITUDE_THRESHOLD) {
             // ラインベクトルの大きさが小さい場合はラインの反対方向に移動
             stop();
             direction = lineAngle - 180;
-            delayTime = 200;
+            delayTime = 100;
         } else {
             // ラインベクトルが十分大きい場合はラインベクトル方向を避けるように移動
             stop();
@@ -43,7 +43,7 @@ void MotorController::moveDirection(int direction, int speed, int gyroAngle, int
                 return;
             }
             direction = atan2(component_y, component_x) * 180 / PI;
-            delayTime = 200;
+            delayTime = 100;
         }
     }
     // 姿勢が左右90度以上ずれている場合はその場で旋回

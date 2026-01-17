@@ -14,11 +14,7 @@
 #define ENABLE_DEBUGGER false  // デバッグモードの有効化
 
 // 回り込みの設定値
-#define WRAP_AROUND_ANGLE_THRESHOLD 10  // 回り込み角度の閾値
 #define WRAP_AROUND_BALL_DIST_THRESHOLD 900  // 回り込み距離の閾値
-#define WRAP_AROUND_ANGLE_RATIO 1.8  // 回り込み角度の倍率
-#define BALL_DIST_MIN 800.0  // ボールの最小距離
-#define BALL_DIST_MAX 1100.0  // ボールの最大距離
 
 // ラインセンサーの閾値
 const int LINE_SENSOR_THRESHOLDS[] = {860, 810, 890, 820, 800, 820, 820, 820};
@@ -45,7 +41,6 @@ Motor motor4 = Motor(12, 11);
 MotorController motorController = MotorController(&motor1, &motor2, &motor3, &motor4);
 
 int correctAngle(int angle);
-int calcWrapAroundAngle(int ballAngle, int ballDist);
 
 void setup() {
   debugger.begin(9600);
@@ -65,12 +60,11 @@ void loop() {
   const int ballDist = irSensor.readDistance();
   debugger.printValues(gyroAngle, lineAngle, lineVectorMagnitude, ballAngle, ballDist);
 
-  // int moveAngle = calcWrapAroundAngle(ballAngle, ballDist);
-
   // 測った角度を8方向に変換して移動
-  int directionEight = correctAngle(ballAngle);
-  int moveAngle = ballDist < WRAP_AROUND_BALL_DIST_THRESHOLD ? DIRECTION_EIGHT_ANGLES[directionEight] : WRAP_AROUND_ANGLE[directionEight];
-  motorController.moveDirection(moveAngle, SPEED, gyroAngle, lineAngle, lineVectorMagnitude);
+  const int directionEight = correctAngle(ballAngle);
+  // 回り込み距離以下ならボール方向の角度、それ以上なら回り込み角度を使う
+  const int moveAngle = ballDist < WRAP_AROUND_BALL_DIST_THRESHOLD ? DIRECTION_EIGHT_ANGLES[directionEight] : WRAP_AROUND_ANGLE[directionEight];
+  motorController.moveDirection(moveAngle, SPEED, directionEight * 45, gyroAngle, lineAngle, lineVectorMagnitude);
 }
 
 int correctAngle(int angle) {
@@ -93,52 +87,4 @@ int correctAngle(int angle) {
     } else {
         return -1;
     }
-}
-
-
-// 回り込み角度の計算
-int calcWrapAroundAngle(int ballAngle, int ballDist) {
-    // ボールの角度の範囲を-180~180に変換
-  int correctBallAngle = ballAngle - 90;
-  if (correctBallAngle > 180) {
-    correctBallAngle = correctBallAngle - 360;
-  }
-
-  int moveAngle = correctBallAngle;
-  // ボールが近い時は大きく回り込む
-  // if (ballDist > WRAP_AROUND_BALL_DIST_THRESHOLD) {
-  //   if (correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) {
-  //     if (abs(correctBallAngle) < 90) {
-  //       moveAngle = correctBallAngle * WRAP_AROUND_ANGLE_RATIO;
-  //     }
-  //     else {
-  //       moveAngle = correctBallAngle * WRAP_AROUND_ANGLE_RATIO / 1.5;
-  //     }
-  //   }
-  // }
-  if ((correctBallAngle > WRAP_AROUND_ANGLE_THRESHOLD || correctBallAngle < -WRAP_AROUND_ANGLE_THRESHOLD) && ballDist > BALL_DIST_MIN) {
-    float ratio = 1 + (ballDist - BALL_DIST_MIN) / (BALL_DIST_MAX - BALL_DIST_MIN);
-    if (abs(correctBallAngle) < 75) {
-      ratio = ratio * 1.5;
-    }
-    moveAngle = correctBallAngle * ratio;
-    Serial.print("ballDist: ");
-    Serial.print(ballDist);
-    Serial.print(" ratio: ");
-    Serial.print(ratio);
-    Serial.print(" moveAngle: ");
-    Serial.println(moveAngle);
-  }
-  // ボールの角度を元の座標系に変換
-  if (moveAngle < 0) {
-    moveAngle = moveAngle + 360;
-  }
-  moveAngle = moveAngle + 90;
-  if (moveAngle > 360) {
-    moveAngle = moveAngle - 360;
-  }
-  if (moveAngle < 0) {
-    moveAngle = moveAngle + 360;
-  }
-  return moveAngle;
 }

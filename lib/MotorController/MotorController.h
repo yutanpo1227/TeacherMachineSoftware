@@ -9,8 +9,7 @@ class MotorController {
         MotorController(Motor* motor1, Motor* motor2, Motor* motor3, Motor* motor4);
         void moveDirection(int direction, int speed);
         void moveDirection(int direction, int speed, int gyroAngle);
-        void moveDirection(int direction, int speed, int gyroAngle, int lineAngle, float lineVectorMagnitude);
-        void moveDirectionEight(int direction, int speed, int irAngle, int gyroAngle, int lineAngle, float lineVectorMagnitude);
+        void moveDirection(int direction, int speed, int irAngle, int gyroAngle, int lineAngle, float lineVectorMagnitude);
         void turnRight(int speed);
         void turnLeft(int speed);
         void stop();
