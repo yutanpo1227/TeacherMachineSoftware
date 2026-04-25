@@ -9,7 +9,7 @@
 
 // マシンのセットアップ値
 #define SPEED 230  // モーターの速度
-#define ENABLE_LINE_SENSOR true  // ラインセンサーの有効化
+#define ENABLE_LINE_SENSOR false  // ラインセンサーの有効化
 #define ENABLE_GYRO_SENSOR true  // ジャイロセンサーの有効化
 #define ENABLE_DEBUGGER false  // デバッグモードの有効化
 

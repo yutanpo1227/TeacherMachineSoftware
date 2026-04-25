@@ -4,23 +4,44 @@
 IRSensor::IRSensor(int startPin, int numSensors) {
     this->startPin = startPin;
     this->numSensors = numSensors;
+    singlePort_ = true;
     for (int i = 0; i < numSensors; i++) {
-        pinMode(startPin + i, INPUT);
+        const int pin = startPin + i;
+        const uint8_t port = digitalPinToPort(pin);
+        regIn_[i] = portInputRegister(port);
+        bitIn_[i] = digitalPinToBitMask(pin);
+        pinMode(pin, INPUT);
         firstRead[i] = true;
+        if (i > 0 && regIn_[i] != regIn_[0]) {
+            singlePort_ = false;
+        }
+    }
+    if (numSensors > 0) {
+        regInSingle_ = (singlePort_) ? regIn_[0] : nullptr;
+    } else {
+        regInSingle_ = nullptr;
     }
 }
 
-void IRSensor::sampleAllLowDuties(int startPin, int numSensors, uint32_t* lowCount,
-                                 uint32_t& totalCount) {
+void IRSensor::sampleAllLowDuties(uint32_t* lowCount, uint32_t& totalCount) {
     for (int i = 0; i < numSensors; i++) {
         lowCount[i] = 0;
     }
     totalCount = 0;
     const uint32_t startUs = micros();
     while (static_cast<uint32_t>(micros() - startUs) < kSampleWindowUs) {
-        for (int i = 0; i < numSensors; i++) {
-            if (digitalRead(startPin + i) == LOW) {
-                lowCount[i]++;
+        if (regInSingle_ != nullptr) {
+            const uint8_t snap = *regInSingle_;
+            for (int i = 0; i < numSensors; i++) {
+                if ((snap & bitIn_[i]) == 0) {
+                    lowCount[i]++;
+                }
+            }
+        } else {
+            for (int i = 0; i < numSensors; i++) {
+                if ((*(regIn_[i]) & bitIn_[i]) == 0) {
+                    lowCount[i]++;
+                }
             }
         }
         totalCount++;
@@ -37,7 +58,7 @@ void IRSensor::updateFilteredDuties() {
     }
     uint32_t lowCount[16];
     uint32_t totalCount = 0;
-    sampleAllLowDuties(startPin, numSensors, lowCount, totalCount);
+    sampleAllLowDuties(lowCount, totalCount);
     for (int i = 0; i < numSensors; i++) {
         const float dutyRaw = (totalCount == 0)
                                   ? 0.0f

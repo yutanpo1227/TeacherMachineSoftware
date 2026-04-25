@@ -14,12 +14,18 @@ class IRSensor {
 
    private:
     void updateFilteredDuties();
-    static void sampleAllLowDuties(int startPin, int numSensors, uint32_t* lowCount, uint32_t& totalCount);
+    void sampleAllLowDuties(uint32_t* lowCount, uint32_t& totalCount);
     // 全センサーの強度を取り付け角で重み付き合成（角度・距離のベクトル和）
     void weightedRingSum(float& sumX, float& sumY) const;
 
     int startPin;
     int numSensors;
+    /** 各 ch の AVR 入力レジスタ（PINx）＋ bit。digitalRead 廃止用 */
+    volatile uint8_t* regIn_[16];
+    uint8_t bitIn_[16];
+    /** 全 ch が同じ PINx 上なら true（1 回 read で8本扱い） */
+    bool singlePort_ = false;
+    volatile uint8_t* regInSingle_ = nullptr;
     float filteredValues[16];
     bool firstRead[16];
     uint32_t lastSampleTimeUs_ = 0;
