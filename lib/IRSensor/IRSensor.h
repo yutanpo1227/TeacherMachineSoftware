@@ -12,8 +12,8 @@ class IRSensor {
    private:
     void updateFilteredDuties();
     static void sampleAllLowDuties(int startPin, int numSensors, uint32_t* lowCount, uint32_t& totalCount);
-    // 最強のセンサーとその周り±2本（合計5本、環状ラップ）で角度・距離用のベクトル和
-    void weightedMaxNeighborhoodSum(float& sumX, float& sumY) const;
+    // 全センサーの強度を取り付け角で重み付き合成（角度・距離のベクトル和）
+    void weightedRingSum(float& sumX, float& sumY) const;
 
     int startPin;
     int numSensors;
