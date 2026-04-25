@@ -6,93 +6,118 @@ IRSensor::IRSensor(int startPin, int numSensors) {
     this->numSensors = numSensors;
     for (int i = 0; i < numSensors; i++) {
         pinMode(startPin + i, INPUT);
+        firstRead[i] = true;
     }
+}
+
+void IRSensor::sampleAllLowDuties(int startPin, int numSensors, uint32_t* lowCount,
+                                 uint32_t& totalCount) {
+    for (int i = 0; i < numSensors; i++) {
+        lowCount[i] = 0;
+    }
+    totalCount = 0;
+    const uint32_t startUs = micros();
+    while (static_cast<uint32_t>(micros() - startUs) < kSampleWindowUs) {
+        for (int i = 0; i < numSensors; i++) {
+            if (digitalRead(startPin + i) == LOW) {
+                lowCount[i]++;
+            }
+        }
+        totalCount++;
+        delayMicroseconds(kSampleIntervalUs);
+    }
+}
+
+void IRSensor::updateFilteredDuties() {
+    if (numSensors <= 0) {
+        return;
+    }
+    if (numSensors > 16) {
+        return;  // 配列上の想定外
+    }
+    uint32_t lowCount[16];
+    uint32_t totalCount = 0;
+    sampleAllLowDuties(startPin, numSensors, lowCount, totalCount);
+    for (int i = 0; i < numSensors; i++) {
+        const float dutyRaw = (totalCount == 0)
+                                  ? 0.0f
+                                  : (static_cast<float>(lowCount[i]) / static_cast<float>(totalCount));
+        if (firstRead[i]) {
+            filteredValues[i] = dutyRaw;
+            firstRead[i] = false;
+        } else {
+            filteredValues[i] =
+                kDutyEmaAlpha * dutyRaw + (1.0f - kDutyEmaAlpha) * filteredValues[i];
+        }
+    }
+    lastSampleTimeUs_ = micros();
 }
 
 int IRSensor::readAngle() {
-    // 全センサーの値を読み取り、フィルタリング
+    updateFilteredDuties();
+    if (numSensors <= 0) {
+        return 0;
+    }
+    // 全センサーの EMA 済み LOW 比率
     float sensorValues[16];
     float maxValue = 0;
     int maxIndex = 0;
-    
+
     for (int i = 0; i < numSensors; i++) {
-        int rawValue = pulseIn(startPin + i, LOW, 1666);
-        
-        // RCローパスフィルタ実装（指数移動平均）
-        if (firstRead[i]) {
-            filteredValues[i] = rawValue;  // 初回はそのまま設定
-            firstRead[i] = false;
-        } else {
-            filteredValues[i] = FILTER_ALPHA * rawValue + (1.0f - FILTER_ALPHA) * filteredValues[i];
-        }
-        
         sensorValues[i] = filteredValues[i];
-        
-        // 最大値とそのインデックスを記録
         if (sensorValues[i] > maxValue) {
             maxValue = sensorValues[i];
             maxIndex = i;
         }
     }
-    
-    // 最大値のセンサーとその隣接2つのセンサーのみを使用
+
     float sumX = 0;
     float sumY = 0;
-    
+
     for (int offset = -1; offset <= 1; offset++) {
-        int index = (maxIndex + offset + numSensors) % numSensors;  // 環状配列として処理
-        float angle = index * (360.0 / numSensors) * PI / 180.0;
-        sumX += cos(angle) * sensorValues[index];
-        sumY += sin(angle) * sensorValues[index];
+        int index = (maxIndex + offset + numSensors) % numSensors;
+        float a = index * (360.0f / static_cast<float>(numSensors)) * PI / 180.0f;
+        sumX += cosf(a) * sensorValues[index];
+        sumY += sinf(a) * sensorValues[index];
     }
-    
-    // 足し合わせたx,y成分から角度を計算
-    float angle = atan2(sumY, sumX);
-    angle = angle * 180 / PI;
+
+    float angle = atan2f(sumY, sumX);
+    angle = angle * 180.0f / PI;
     if (angle < 0) {
-        angle += 360;
+        angle += 360.0f;
     }
-    return angle;
+    return static_cast<int>(angle);
 }
 
 int IRSensor::readDistance() {
-    // 全センサーの値を読み取り、フィルタリング
-    float sensorValues[16];
+    const uint32_t now = micros();
+    if (lastSampleTimeUs_ == 0U ||
+        static_cast<uint32_t>(now - lastSampleTimeUs_) > kResampleMinIntervalUs) {
+        updateFilteredDuties();
+    }
+    if (numSensors <= 0) {
+        return 0;
+    }
     float maxValue = 0;
     int maxIndex = 0;
-    
+
     for (int i = 0; i < numSensors; i++) {
-        int rawValue = pulseIn(startPin + i, LOW, 1666);
-        
-        // RCローパスフィルタ実装（指数移動平均）
-        if (firstRead[i]) {
-            filteredValues[i] = rawValue;  // 初回はそのまま設定
-            firstRead[i] = false;
-        } else {
-            filteredValues[i] = FILTER_ALPHA * rawValue + (1.0f - FILTER_ALPHA) * filteredValues[i];
-        }
-        
-        sensorValues[i] = filteredValues[i];
-        
-        // 最大値とそのインデックスを記録
-        if (sensorValues[i] > maxValue) {
-            maxValue = sensorValues[i];
+        if (filteredValues[i] > maxValue) {
+            maxValue = filteredValues[i];
             maxIndex = i;
         }
     }
-    
-    // 最大値のセンサーとその隣接4つのセンサーのみを使用
+
     float sumX = 0;
     float sumY = 0;
-    
+
     for (int offset = -1; offset <= 1; offset++) {
-        int index = (maxIndex + offset + numSensors) % numSensors;  // 環状配列として処理
-        float angle = index * (360.0 / numSensors) * PI / 180.0;
-        sumX += cos(angle) * sensorValues[index];
-        sumY += sin(angle) * sensorValues[index];
+        int index = (maxIndex + offset + numSensors) % numSensors;
+        float a = index * (360.0f / static_cast<float>(numSensors)) * PI / 180.0f;
+        sumX += cosf(a) * filteredValues[index];
+        sumY += sinf(a) * filteredValues[index];
     }
-    
-    // 足し合わせたx,y成分からユークリッド距離を計算
-    float distance = sqrt(sumX * sumX + sumY * sumY);
-    return distance;
+    // 0..1 前後の相対スカラー。旧 pulseIn(µs) ベースの閾値とは量が違うので main 側の閾値は要再調整
+    float distance = sqrtf(sumX * sumX + sumY * sumY);
+    return static_cast<int>(distance * 1000.0f);
 }

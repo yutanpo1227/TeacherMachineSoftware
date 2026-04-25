@@ -13,8 +13,8 @@
 #define ENABLE_GYRO_SENSOR true  // ジャイロセンサーの有効化
 #define ENABLE_DEBUGGER false  // デバッグモードの有効化
 
-// 回り込みの設定値
-#define WRAP_AROUND_BALL_DIST_THRESHOLD 900  // 回り込み距離の閾値
+// 回り込みの設定値（readDistance は TSSP LOW 比率 EMA 由来の相対量×1000。実機で再調整のこと）
+#define WRAP_AROUND_BALL_DIST_THRESHOLD 900
 
 // ラインセンサーの閾値
 const int LINE_SENSOR_THRESHOLDS[] = {860, 810, 890, 820, 800, 820, 820, 820};
