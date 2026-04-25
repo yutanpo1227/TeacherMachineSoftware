@@ -53,6 +53,17 @@ void IRSensor::updateFilteredDuties() {
     lastSampleTimeUs_ = micros();
 }
 
+int IRSensor::copyFilteredDuties(float* out, int maxOut) const {
+    if (out == nullptr || maxOut <= 0 || numSensors <= 0) {
+        return 0;
+    }
+    const int n = (numSensors < maxOut) ? numSensors : maxOut;
+    for (int i = 0; i < n; i++) {
+        out[i] = filteredValues[i];
+    }
+    return n;
+}
+
 void IRSensor::weightedRingSum(float& sumX, float& sumY) const {
     sumX = 0.0f;
     sumY = 0.0f;

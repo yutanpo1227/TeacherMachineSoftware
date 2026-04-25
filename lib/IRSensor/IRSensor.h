@@ -8,6 +8,9 @@ class IRSensor {
     IRSensor(int startPin, int numSensors);
     int readAngle();
     int readDistance();
+    int getNumSensors() const { return numSensors; }
+    /** 直近の update 後の EMA 済み LOW 比を out へ。戻り値: 格納した本数。 */
+    int copyFilteredDuties(float* out, int maxOut) const;
 
    private:
     void updateFilteredDuties();

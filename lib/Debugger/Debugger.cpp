@@ -42,3 +42,20 @@ void Debugger::printValues(int gyroAngle, int lineAngle, float lineVectorMagnitu
     Serial.println(ballDist);
     Serial.println("================");
 }
+
+void Debugger::printIrFilteredDuties(const float* values, int count) {
+    if (!enabled) {
+        return;
+    }
+    if (values == nullptr || count <= 0) {
+        return;
+    }
+    Serial.print(F("IR_ema: "));
+    for (int i = 0; i < count; i++) {
+        if (i > 0) {
+            Serial.print(F(","));
+        }
+        Serial.print(values[i], 4);
+    }
+    Serial.println();
+}

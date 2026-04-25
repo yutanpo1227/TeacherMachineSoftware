@@ -58,6 +58,9 @@ void loop() {
   const int gyroAngle = gyroSensor.readYawAngle();
   const int ballAngle = irSensor.readAngle();
   const int ballDist = irSensor.readDistance();
+  float irFilteredDuties[16];
+  const int irN = irSensor.copyFilteredDuties(irFilteredDuties, 16);
+  debugger.printIrFilteredDuties(irFilteredDuties, irN);
   debugger.printValues(gyroAngle, lineAngle, lineVectorMagnitude, ballAngle, ballDist);
 
   // 測った角度を8方向に変換して移動
