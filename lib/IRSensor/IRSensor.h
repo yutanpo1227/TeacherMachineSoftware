@@ -12,6 +12,7 @@ class IRSensor {
    private:
     void updateFilteredDuties();
     static void sampleAllLowDuties(int startPin, int numSensors, uint32_t* lowCount, uint32_t& totalCount);
+    void weightedRingSum(float& sumX, float& sumY) const;
 
     int startPin;
     int numSensors;
