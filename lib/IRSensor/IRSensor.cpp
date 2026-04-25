@@ -53,14 +53,23 @@ void IRSensor::updateFilteredDuties() {
     lastSampleTimeUs_ = micros();
 }
 
-void IRSensor::weightedRingSum(float& sumX, float& sumY) const {
+void IRSensor::weightedMaxNeighborhoodSum(float& sumX, float& sumY) const {
+    float maxValue = 0.0f;
+    int maxIndex = 0;
+    for (int i = 0; i < numSensors; i++) {
+        if (filteredValues[i] > maxValue) {
+            maxValue = filteredValues[i];
+            maxIndex = i;
+        }
+    }
     sumX = 0.0f;
     sumY = 0.0f;
     const float n = static_cast<float>(numSensors);
-    for (int i = 0; i < numSensors; i++) {
-        const float a = (i * 360.0f / n) * (PI / 180.0f);
-        sumX += cosf(a) * filteredValues[i];
-        sumY += sinf(a) * filteredValues[i];
+    for (int offset = -2; offset <= 2; offset++) {
+        const int index = (maxIndex + offset + numSensors) % numSensors;
+        const float a = (static_cast<float>(index) * 360.0f / n) * (PI / 180.0f);
+        sumX += cosf(a) * filteredValues[index];
+        sumY += sinf(a) * filteredValues[index];
     }
 }
 
@@ -71,7 +80,7 @@ int IRSensor::readAngle() {
     }
     float sumX;
     float sumY;
-    weightedRingSum(sumX, sumY);
+    weightedMaxNeighborhoodSum(sumX, sumY);
     float angle = atan2f(sumY, sumX);
     angle = angle * 180.0f / PI;
     if (angle < 0) {
@@ -91,8 +100,8 @@ int IRSensor::readDistance() {
     }
     float sumX;
     float sumY;
-    weightedRingSum(sumX, sumY);
-    // 0..1 前後 per 本×本数 ベクトル長。旧 pulseIn(µs) や max+2 本時のスケールは異なるので main 閾値は要再調整
+    weightedMaxNeighborhoodSum(sumX, sumY);
+    // 相対ベクトル長（max 周囲5本分）。数が変わるとスケールも変わるので main 閾値は要再調整
     float distance = sqrtf(sumX * sumX + sumY * sumY);
     return static_cast<int>(distance * 1000.0f);
 }
