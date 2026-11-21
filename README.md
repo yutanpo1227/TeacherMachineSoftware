@@ -42,6 +42,7 @@
 
 ## デバッグ
 
+![debugger](docs/images/debugger-image.png)
 [PITCHデバッガー](robot-debugger/README.md) を起動し、ArduinoのUSBポートを選んで115200bpsで接続します。ボールと白線は**方向**、`bottomGap` はゴールまでの距離の目安になる**画素値**です。カメラとArduinoのUARTは、このUSB接続とは別の経路です。PlatformIOのシリアルモニターなどとポートを共有できない場合は、先に片方を閉じます。
 
 このプロジェクトでCodexを使うときは、[実機調査スキル](.agents/skills/rcj-robot-diagnostics/SKILL.md) にセンサー・通信・走行の切り分け手順があります。
