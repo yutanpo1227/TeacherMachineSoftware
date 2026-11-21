@@ -1,4 +1,5 @@
 # TeacherMachineSoftware
+![マシン全体図](docs/images/machine-image.png)
 
 ロボカップジュニア・サッカー ライトウェイト用のロボット制御ソフトです。Arduino Megaが4輪のオムニホイールを駆動します。V字ミラー付きカメラで前後を見て、IRセンサーでボール、白線センサーで床のライン、BNO055で機体の向きを測ります。MacではPITCHデバッガーで観測値を確認できます。
 
