@@ -1,98 +1,77 @@
 #include "IRSensor.h"
 #include <Arduino.h>
+#include <math.h>
 
-IRSensor::IRSensor(int startPin, int numSensors) {
-    this->startPin = startPin;
-    this->numSensors = numSensors;
+IRSensor::IRSensor(int startPin, int numSensors)
+    : startPin(startPin),
+      numSensors(numSensors) {
+    for (int i = 0; i < 16; i++) {
+        pulseWidths[i] = 0;
+    }
+
     for (int i = 0; i < numSensors; i++) {
-        pinMode(startPin + i, INPUT);
+        // TSSP58038は検出時LOWのため、入力をHIGHへ戻す。
+        pinMode(startPin + i, INPUT_PULLUP);
     }
 }
 
-int IRSensor::readAngle() {
-    // 全センサーの値を読み取り、フィルタリング
-    float sensorValues[16];
-    float maxValue = 0;
-    int maxIndex = 0;
-    
+void IRSensor::measurePulseWidths() {
+    // 1周分の受光を取得する。検出できない素子ではそれぞれ最大3ms待つ。
     for (int i = 0; i < numSensors; i++) {
-        int rawValue = pulseIn(startPin + i, LOW, 1666);
-        
-        // RCローパスフィルタ実装（指数移動平均）
-        if (firstRead[i]) {
-            filteredValues[i] = rawValue;  // 初回はそのまま設定
-            firstRead[i] = false;
-        } else {
-            filteredValues[i] = FILTER_ALPHA * rawValue + (1.0f - FILTER_ALPHA) * filteredValues[i];
-        }
-        
-        sensorValues[i] = filteredValues[i];
-        
-        // 最大値とそのインデックスを記録
-        if (sensorValues[i] > maxValue) {
-            maxValue = sensorValues[i];
-            maxIndex = i;
-        }
+        // TSSP58038は検出時LOWなので、LOWパルスを測定する。
+        // パルスがない場合はタイムアウトして0になる。
+        pulseWidths[i] = pulseIn(
+            startPin + i, LOW, PULSE_TIMEOUT_US);
     }
-    
-    // 最大値のセンサーとその隣接2つのセンサーのみを使用
-    float sumX = 0;
-    float sumY = 0;
-    
-    for (int offset = -1; offset <= 1; offset++) {
-        int index = (maxIndex + offset + numSensors) % numSensors;  // 環状配列として処理
-        float angle = index * (360.0 / numSensors) * PI / 180.0;
-        sumX += cos(angle) * sensorValues[index];
-        sumY += sin(angle) * sensorValues[index];
+}
+
+float IRSensor::normalizeAngle(float angle) {
+    while (angle < 0.0f) {
+        angle += 360.0f;
     }
-    
-    // 足し合わせたx,y成分から角度を計算
-    float angle = atan2(sumY, sumX);
-    angle = angle * 180 / PI;
-    if (angle < 0) {
-        angle += 360;
+    while (angle >= 360.0f) {
+        angle -= 360.0f;
     }
     return angle;
 }
 
-int IRSensor::readDistance() {
-    // 全センサーの値を読み取り、フィルタリング
-    float sensorValues[16];
-    float maxValue = 0;
-    int maxIndex = 0;
-    
+int IRSensor::readAngle() {
+    measurePulseWidths();
+
+    // 反応した受光素子の向きをパルス幅で重み付けし、機体から見たボールの方向にする。
+    float vectorX = 0.0f;
+    float vectorY = 0.0f;
+    float totalWeight = 0.0f;
+
     for (int i = 0; i < numSensors; i++) {
-        int rawValue = pulseIn(startPin + i, LOW, 1666);
-        
-        // RCローパスフィルタ実装（指数移動平均）
-        if (firstRead[i]) {
-            filteredValues[i] = rawValue;  // 初回はそのまま設定
-            firstRead[i] = false;
-        } else {
-            filteredValues[i] = FILTER_ALPHA * rawValue + (1.0f - FILTER_ALPHA) * filteredValues[i];
+        if (pulseWidths[i] < MIN_PULSE_US) {
+            continue;
         }
-        
-        sensorValues[i] = filteredValues[i];
-        
-        // 最大値とそのインデックスを記録
-        if (sensorValues[i] > maxValue) {
-            maxValue = sensorValues[i];
-            maxIndex = i;
-        }
+
+        const float angle =
+            (float)i * (360.0f / (float)numSensors);
+        const float angleRad = angle * PI / 180.0f;
+
+        const float weight = (float)pulseWidths[i];
+        vectorX += weight * cos(angleRad);
+        vectorY += weight * sin(angleRad);
+        totalWeight += weight;
     }
-    
-    // 最大値のセンサーとその隣接4つのセンサーのみを使用
-    float sumX = 0;
-    float sumY = 0;
-    
-    for (int offset = -1; offset <= 1; offset++) {
-        int index = (maxIndex + offset + numSensors) % numSensors;  // 環状配列として処理
-        float angle = index * (360.0 / numSensors) * PI / 180.0;
-        sumX += cos(angle) * sensorValues[index];
-        sumY += sin(angle) * sensorValues[index];
+
+    if (totalWeight <= 0.0f) {
+        return -1;
     }
-    
-    // 足し合わせたx,y成分からユークリッド距離を計算
-    float distance = sqrt(sumX * sumX + sumY * sumY);
-    return distance;
+
+    // ボールが見える方向の単位ベクトルを足し合わせ、その合成角を求める。
+    // パルス幅は重みとして使うが、この値から実距離は算出していない。
+    const float angle = normalizeAngle(
+        atan2(vectorY, vectorX) * 180.0f / PI);
+
+    // readAngle()の戻り値はintなので、小数点以下は切り捨てる。
+    return (int)angle;
+}
+
+int IRSensor::readDistance() {
+    // TSSP58038のIR距離は使用しない。
+    return -1;
 }

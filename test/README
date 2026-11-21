@@ -1,11 +1,8 @@
+# テスト
 
-This directory is intended for PlatformIO Test Runner and project tests.
+ホストPCでArduinoの一部の機能を代用し、実機に書き込まずに制御と通信を確認します。
 
-Unit Testing is a software testing method by which individual units of
-source code, sets of one or more MCU program modules together with associated
-control data, usage procedures, and operating procedures, are tested to
-determine whether they are fit for use. Unit testing finds problems early
-in the development cycle.
+- host/goal_control_test.cpp は姿勢、守備、白線、モーター指令、カメラ通信のテストです。host/stubs/Arduino.h がArduinoのAPIを代用します。
+- host/test_camera.py はMaixPy APIを代用して、カメラの検出処理と送信形式をテストします。
 
-More information about PlatformIO Unit Testing:
-- https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+実行コマンドと必要なライブラリの指定は、リポジトリ直下の README.md の「検証」に記載しています。実際のカメラ映像、センサー値、車輪の動きの確認には実機が必要です。

@@ -10,6 +10,7 @@ GyroSensor::GyroSensor() {
 }
 
 void GyroSensor::setup() {
+    // 接続を確立できない状態で姿勢制御を始めないよう、失敗時はここで止まる。
     if(!bno.begin())
     {
         /* There was a problem detecting the BNO055 ... check your connections */
@@ -21,6 +22,7 @@ void GyroSensor::setup() {
 }
 
 int GyroSensor::readYawAngle() {
+    // BNO055の方位をそのまま返す。電源投入時の機体の向きを0度にする処理はない。
     if (!mode) {
         return 0;
     }

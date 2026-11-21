@@ -4,7 +4,7 @@ Debugger::Debugger(bool isEnabled) {
     enabled = isEnabled;
 }
 
-void Debugger::begin(int baudRate) {
+void Debugger::begin(unsigned long baudRate) {
     if (enabled) Serial.begin(baudRate);
 }
 
@@ -26,8 +26,9 @@ void Debugger::println(String message) {
     Serial.println(message);
 }
 
-void Debugger::printValues(int gyroAngle, int lineAngle, float lineVectorMagnitude, int ballAngle, int ballDist) {
+void Debugger::printValues(int gyroAngle, int lineAngle, float lineVectorMagnitude, int ballAngle, int ballDist, int cameraBallAngle) {
     if (!enabled) return;
+    // 旧形式の表示。各値は採取順に表示し、時刻付きの一括フレームではない。
     
     Serial.println("=== センサー値 ===");
     Serial.print("ジャイロ角度: ");
@@ -40,5 +41,7 @@ void Debugger::printValues(int gyroAngle, int lineAngle, float lineVectorMagnitu
     Serial.println(ballAngle);
     Serial.print("ボール距離: ");
     Serial.println(ballDist);
+    Serial.print("カメラボール角度: ");
+    Serial.println(cameraBallAngle);
     Serial.println("================");
 }
