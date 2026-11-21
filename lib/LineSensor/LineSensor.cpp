@@ -23,6 +23,7 @@ void LineSensor::printValues() {
 }
 
 int LineSensor::readAngle() {
+    // 車体の周囲で白線に乗っている側を求める。停止・退避の判断は走行制御側で行う。
     if (!mode) {
         return -1;
     }
@@ -33,14 +34,12 @@ int LineSensor::readAngle() {
     }
     float sumX = 0;
     float sumY = 0;
-    float onLineCount = 0;
     for (int i = 0; i < numSensors; i++) {
         int readValue = analogRead(startPin + i);
         if (readValue > thresholds[i]) {
             float angle = i * (360.0 / numSensors) * PI / 180.0;
             sumX += cos(angle);
             sumY += sin(angle);
-            onLineCount++;
         }
     }
     
@@ -49,13 +48,13 @@ int LineSensor::readAngle() {
         rawAngle += 360;  // 0-360度に正規化
     }
     
-    // ノイズフィルタリング
+    // 白線位置が小刻みに揺れても急に進路を変えないよう前回値を使う。
     if (!hasPreviousAngle) {
         // 初回は生の値をそのまま使用
         filteredAngle = rawAngle;
         hasPreviousAngle = true;
     } else {
-        // 角度差を計算（360度境界を考慮）
+        // 359度と1度を遠く離れた方向と誤認しないよう、差を±180度に収める。
         float angleDiff = rawAngle - previousAngle;
         if (angleDiff > 180) {
             angleDiff -= 360;
@@ -68,8 +67,8 @@ int LineSensor::readAngle() {
             // 大きな変化は無視し、前回の値を継続
             filteredAngle = previousAngle;
         } else {
-            // 移動平均フィルタを適用
-            filteredAngle = ANGLE_FILTER_ALPHA * rawAngle + (1.0f - ANGLE_FILTER_ALPHA) * previousAngle;
+            // 円周上の短い差を使う。315度から0度へ変わっても180度側へ飛ばない。
+            filteredAngle = previousAngle + ANGLE_FILTER_ALPHA * angleDiff;
             if (filteredAngle < 0) {
                 filteredAngle += 360;
             } else if (filteredAngle >= 360) {
@@ -80,6 +79,11 @@ int LineSensor::readAngle() {
     
     previousAngle = filteredAngle;
     return (int)filteredAngle;
+}
+
+void LineSensor::resetFilter() {
+    hasPreviousAngle = false;
+    filteredAngle = 0;
 }
 
 bool LineSensor::checkOnLine() {
@@ -117,7 +121,7 @@ float LineSensor::readVectorMagnitude() {
             onLineCount++;
         }
     }
-    // ベクトルのノルム（大きさ）を計算
+    // 同じ側に反応が集まると1に近く、反対側にも広がると互いに打ち消され0に近づく。
     float magnitude = sqrt(sumX * sumX + sumY * sumY) / onLineCount;
     return magnitude;
 }

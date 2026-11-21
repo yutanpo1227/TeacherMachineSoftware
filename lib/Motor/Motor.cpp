@@ -9,6 +9,7 @@ Motor::Motor(int phPin, int enPin) {
 }
 
 void Motor::setSpeed(int speed) {
+    // 符号は車輪の回転方向、絶対値はPWMの強さ。車輪の実際の回転数は計測しない。
     if (speed == 0) {
         analogWrite(enPin, 0);
         return;
